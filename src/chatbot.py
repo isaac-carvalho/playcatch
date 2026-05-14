@@ -7,10 +7,13 @@ e recomenda musicas usando o modulo recomendador.
 Usa classificacao zero-shot para identificar intencao e sentimento.
 """
 
+import logging
 import re
 from pathlib import Path
 
 from transformers import pipeline
+
+log = logging.getLogger(__name__)
 
 from src.recommender import MusicRecommender, SENTIMENTOS_VALIDOS
 
@@ -48,7 +51,7 @@ class PlaycatchChatbot:
     def _load_classifier(self):
         """Carrega classificador zero-shot (lazy)."""
         if self.classifier is None:
-            print("Carregando classificador de intencao...")
+            log.info("Carregando classificador de intencao...")
             self.classifier = pipeline(
                 "zero-shot-classification",
                 model="facebook/bart-large-mnli",

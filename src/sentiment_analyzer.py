@@ -9,10 +9,13 @@ em JSON estruturado para uso pelo recomendador.
 
 import csv
 import json
+import logging
 import re
 from pathlib import Path
 
 from transformers import pipeline
+
+log = logging.getLogger(__name__)
 
 
 # Mapeamento de estrelas (1-5) para categorias de humor
@@ -55,9 +58,9 @@ def analyze_sentiments(lyrics: list[dict], model_name: str = "nlptown/bert-base-
     O modelo retorna estrelas de 1 a 5, mapeadas para categorias de humor.
     Trunca letras longas para respeitar limite de 512 tokens do BERT.
     """
-    print(f"Carregando modelo: {model_name}")
+    log.info("Carregando modelo: %s", model_name)
     classifier = pipeline("sentiment-analysis", model=model_name, truncation=True, max_length=512)
-    print("Modelo carregado com sucesso!\n")
+    log.info("Modelo carregado com sucesso!")
 
     results = []
     for item in lyrics:
@@ -78,7 +81,7 @@ def analyze_sentiments(lyrics: list[dict], model_name: str = "nlptown/bert-base-
             "score": score,
         }
         results.append(result)
-        print(f"  {item['titulo']:30s} | {stars} estrelas | {mood:12s} | score: {score}")
+        log.info("  %s | %d estrelas | %s | score: %s", item['titulo'], stars, mood, score)
 
     return results
 
@@ -87,7 +90,7 @@ def save_results(results: list[dict], output_path: str) -> None:
     """Salva resultados em JSON."""
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
-    print(f"\nResultados salvos em: {output_path}")
+    log.info("Resultados salvos em: %s", output_path)
 
 
 def main():
