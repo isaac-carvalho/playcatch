@@ -17,8 +17,7 @@ from src.recommender import MusicRecommender, SENTIMENTOS_VALIDOS
 
 # Palavras-chave para deteccao de intencao (fallback rapido)
 MOOD_KEYWORDS = {
-    "feliz": ["feliz", "alegre", "contente", "bem", "otimo", "maravilhoso", "legal"],
-    "energetico": ["animado", "energia", "empolgado", "agitado", "festa", "dançar", "correr", "malhar"],
+    "energetico": ["feliz", "alegre", "contente", "bem", "otimo", "maravilhoso", "legal", "animado", "energia", "empolgado", "agitado", "festa", "dançar", "correr", "malhar"],
     "triste": ["triste", "chateado", "deprimido", "mal", "chorar", "sozinho", "dor"],
     "melancolico": ["saudade", "nostalgia", "melancolico", "lembrar", "passado", "distante"],
     "neutro": ["calmo", "tranquilo", "relaxar", "paz", "suave", "leve", "descansar"],
@@ -74,7 +73,7 @@ class PlaycatchChatbot:
         top_label = result["labels"][0]
 
         mapping = {
-            "feliz e animado": "feliz",
+            "feliz e animado": "energetico",
             "triste e melancolico": "triste",
             "calmo e tranquilo": "neutro",
             "energetico e empolgado": "energetico",
@@ -89,7 +88,7 @@ class PlaycatchChatbot:
         # Regras rapidas antes do modelo
         if any(w in text_lower for w in ["oi", "ola", "hey", "eai", "bom dia", "boa tarde", "boa noite"]):
             return "saudacao"
-        if any(w in text_lower for w in ["tchau", "bye", "ate", "falou", "valeu"]):
+        if any(w in text_lower for w in ["tchau", "bye", "falou", "valeu"]) or re.search(r'\bate\b', text_lower):
             return "despedida"
         # Negativo ANTES do positivo ("nao gostei" contém "gostei")
         if any(w in text_lower for w in ["nao gostei", "pulei", "pula", "nao curti", "fraca"]):

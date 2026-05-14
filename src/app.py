@@ -9,6 +9,7 @@ Interface Gradio com duas abas:
 
 import json
 from pathlib import Path
+from threading import Lock
 
 import gradio as gr
 
@@ -20,24 +21,24 @@ from src.chatbot import PlaycatchChatbot
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = BASE_DIR / "data" / "lyrics_sentiment.json"
 
-# Inicializa componentes
+# Recommender compartilhado (read-only songs, feedback com lock)
 recommender = MusicRecommender(str(DATA_PATH))
-chatbot = PlaycatchChatbot(recommender)
+_feedback_lock = Lock()
 
 
 # ===================== ABA 1: CONVERSA =====================
 
-def chat_respond(message: str, history: list[dict]) -> tuple[list[dict], str]:
-    """Processa mensagem no chatbot e retorna historico atualizado."""
+def chat_respond(message: str, history: list[dict], session_bot: PlaycatchChatbot) -> tuple[list[dict], str, PlaycatchChatbot]:
+    """Processa mensagem no chatbot per-sessao e retorna historico atualizado."""
     if not message.strip():
-        return history, ""
+        return history, "", session_bot
 
-    response = chatbot.respond(message, history)
+    response = session_bot.respond(message, history)
 
     history.append({"role": "user", "content": message})
     history.append({"role": "assistant", "content": response})
 
-    return history, ""
+    return history, "", session_bot
 
 
 # ===================== ABA 2: EXPLORAR =====================
@@ -50,8 +51,8 @@ def explore_by_mood(mood: str) -> str:
 
     lines = [f"## Musicas com humor: {mood.upper()}\n"]
     for i, r in enumerate(recs, 1):
-        stars = "⭐" * r.get("estrelas", 3)
-        lines.append(f"### {i}. {r['titulo']} — {r['artista']}")
+        stars = "\u2b50" * r.get("estrelas", 3)
+        lines.append(f"### {i}. {r['titulo']} \u2014 {r['artista']}")
         lines.append(f"- Sentimento: **{r['sentimento']}** | Score: {r['score']} | {stars}")
         lines.append(f"- Trecho: _{r['letra'][:100]}..._\n")
 
@@ -59,13 +60,14 @@ def explore_by_mood(mood: str) -> str:
 
 
 def give_feedback(titulo: str, action: str) -> str:
-    """Registra feedback do usuario."""
+    """Registra feedback do usuario (thread-safe)."""
     song = recommender.get_song_by_title(titulo)
     if not song:
         return f"Musica '{titulo}' nao encontrada."
-    success = recommender.register_feedback(song["titulo"], song["artista"], action)
+    with _feedback_lock:
+        success = recommender.register_feedback(song["titulo"], song["artista"], action)
     if success:
-        emoji = "👍" if action == "like" else "👎"
+        emoji = "\ud83d\udc4d" if action == "like" else "\ud83d\udc4e"
         return f"{emoji} Feedback registrado para **{song['titulo']}**!"
     return "Erro ao registrar feedback."
 
@@ -82,7 +84,7 @@ def get_stats() -> str:
     lines = ["## Estatisticas da Base\n"]
     lines.append(f"**Total de musicas:** {len(recommender.songs)}\n")
     for mood, count in moods.most_common():
-        bar = "█" * count
+        bar = "\u2588" * count
         lines.append(f"- **{mood}**: {count} musicas {bar}")
     return "\n".join(lines)
 
@@ -93,19 +95,22 @@ def build_interface() -> gr.Blocks:
     """Constroi interface Gradio unificada."""
 
     with gr.Blocks(
-        title="Playcatch — DJ Musical com IA",
+        title="Playcatch \u2014 DJ Musical com IA",
     ) as app:
 
+        # Estado per-sessao: cada usuario tem seu proprio chatbot
+        session_bot = gr.State(lambda: PlaycatchChatbot(recommender))
+
         gr.Markdown(
-            "# 🎧 Playcatch — DJ Musical com IA\n"
+            "# \ud83c\udfa7 Playcatch \u2014 DJ Musical com IA\n"
             "Descubra musicas que combinam com seu humor usando inteligencia artificial."
         )
 
-        with gr.Tab("💬 Conversa"):
+        with gr.Tab("\ud83d\udcac Conversa"):
             gr.Markdown("Converse com o DJ Playcatch! Diga como voce ta se sentindo.")
 
             chatbot_ui = gr.Chatbot(
-                value=[{"role": "assistant", "content": "Oi! Sou o DJ da Playcatch 🎧\nMe conta como voce ta se sentindo e eu recomendo musicas!"}],
+                value=[{"role": "assistant", "content": "Oi! Sou o DJ da Playcatch \ud83c\udfa7\nMe conta como voce ta se sentindo e eu recomendo musicas!"}],
                 height=400,
             )
             msg_input = gr.Textbox(
@@ -115,10 +120,10 @@ def build_interface() -> gr.Blocks:
             )
             send_btn = gr.Button("Enviar", variant="primary")
 
-            send_btn.click(chat_respond, [msg_input, chatbot_ui], [chatbot_ui, msg_input])
-            msg_input.submit(chat_respond, [msg_input, chatbot_ui], [chatbot_ui, msg_input])
+            send_btn.click(chat_respond, [msg_input, chatbot_ui, session_bot], [chatbot_ui, msg_input, session_bot])
+            msg_input.submit(chat_respond, [msg_input, chatbot_ui, session_bot], [chatbot_ui, msg_input, session_bot])
 
-        with gr.Tab("🔍 Explorar por Humor"):
+        with gr.Tab("\ud83d\udd0d Explorar por Humor"):
             gr.Markdown("Escolha um humor e veja as recomendacoes!")
 
             with gr.Row():
@@ -138,14 +143,14 @@ def build_interface() -> gr.Blocks:
                     choices=get_song_titles(),
                     label="Selecione a musica",
                 )
-                like_btn = gr.Button("👍 Gostei", variant="secondary")
-                skip_btn = gr.Button("👎 Pular", variant="secondary")
+                like_btn = gr.Button("\ud83d\udc4d Gostei", variant="secondary")
+                skip_btn = gr.Button("\ud83d\udc4e Pular", variant="secondary")
 
             feedback_output = gr.Markdown()
             like_btn.click(lambda t: give_feedback(t, "like"), [title_dropdown], [feedback_output])
             skip_btn.click(lambda t: give_feedback(t, "skip"), [title_dropdown], [feedback_output])
 
-        with gr.Tab("📊 Estatisticas"):
+        with gr.Tab("\ud83d\udcca Estatisticas"):
             stats_output = gr.Markdown(value=get_stats())
             refresh_btn = gr.Button("Atualizar")
             refresh_btn.click(get_stats, [], [stats_output])
