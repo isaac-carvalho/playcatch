@@ -91,12 +91,14 @@ class PlaycatchChatbot:
             return "saudacao"
         if any(w in text_lower for w in ["tchau", "bye", "ate", "falou", "valeu"]):
             return "despedida"
-        if any(w in text_lower for w in ["mais", "outra", "outras", "proxima", "mais dessas"]):
-            return "pedir mais recomendacoes"
-        if any(w in text_lower for w in ["gostei", "curti", "adorei", "boa", "show", "top"]):
-            return "dar feedback positivo"
+        # Negativo ANTES do positivo ("nao gostei" contém "gostei")
         if any(w in text_lower for w in ["nao gostei", "pulei", "pula", "nao curti", "fraca"]):
             return "dar feedback negativo"
+        if any(w in text_lower for w in ["gostei", "curti", "adorei", "boa", "show", "top"]):
+            return "dar feedback positivo"
+        # Word boundary para "mais" evitar falso positivo em "demais"
+        if re.search(r'\bmais\b', text_lower) or any(w in text_lower for w in ["outra", "outras", "proxima", "mais dessas"]):
+            return "pedir mais recomendacoes"
 
         # Se tem palavras de humor, e busca
         if self.detect_mood_keywords(text):
@@ -117,6 +119,8 @@ class PlaycatchChatbot:
 
     def respond(self, message: str, history: list | None = None) -> str:
         """Processa mensagem do usuario e retorna resposta."""
+        if not message or not message.strip():
+            return "Oi! Me diz como voce ta se sentindo e eu recomendo musicas."
         intent = self.detect_intent(message)
 
         if intent == "saudacao":

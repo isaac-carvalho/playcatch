@@ -63,7 +63,7 @@ def analyze_sentiments(lyrics: list[dict], model_name: str = "nlptown/bert-base-
 
         prediction = classifier(cleaned[:512])[0]
         # Label vem como "1 star", "2 stars", etc.
-        stars = int(prediction["label"][0])
+        stars = int(prediction["label"].split()[0])
         score = round(prediction["score"], 4)
         mood = STAR_TO_MOOD.get(stars, "neutro")
 

@@ -142,8 +142,8 @@ def build_interface() -> gr.Blocks:
                 skip_btn = gr.Button("👎 Pular", variant="secondary")
 
             feedback_output = gr.Markdown()
-            like_btn.click(give_feedback, [title_dropdown, gr.State("like")], [feedback_output])
-            skip_btn.click(give_feedback, [title_dropdown, gr.State("skip")], [feedback_output])
+            like_btn.click(lambda t: give_feedback(t, "like"), [title_dropdown], [feedback_output])
+            skip_btn.click(lambda t: give_feedback(t, "skip"), [title_dropdown], [feedback_output])
 
         with gr.Tab("📊 Estatisticas"):
             stats_output = gr.Markdown(value=get_stats())

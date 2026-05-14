@@ -12,12 +12,13 @@ import random
 from pathlib import Path
 
 
-# Sentimentos disponiveis no sistema
-SENTIMENTOS_VALIDOS = ["triste", "melancolico", "neutro", "feliz", "energetico"]
+# Sentimentos presentes na base (gerados pelo sentiment_analyzer)
+SENTIMENTOS_VALIDOS = ["triste", "melancolico", "neutro", "energetico"]
 
 # Mapeamento de sinonimos para facilitar input do usuario
+# "feliz" e mapeado para "energetico" pois o modelo BERT nao gerou essa categoria na base atual
 SINONIMOS = {
-    "alegre": "feliz",
+    "alegre": "energetico",
     "animado": "energetico",
     "empolgado": "energetico",
     "calmo": "neutro",
@@ -29,8 +30,8 @@ SINONIMOS = {
     "melancolico": "melancolico",
     "saudade": "melancolico",
     "nostalgico": "melancolico",
-    "feliz": "feliz",
-    "contente": "feliz",
+    "feliz": "energetico",
+    "contente": "energetico",
     "neutro": "neutro",
     "energetico": "energetico",
 }
