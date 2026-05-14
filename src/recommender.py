@@ -46,6 +46,8 @@ class MusicRecommender:
         self._init_feedback()
 
     def _load_data(self, path: str) -> list[dict]:
+        if not Path(path).exists():
+            raise FileNotFoundError(f"Arquivo de sentimentos nao encontrado: {path}")
         with open(path, encoding="utf-8") as f:
             return json.load(f)
 

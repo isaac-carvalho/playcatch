@@ -27,6 +27,8 @@ STAR_TO_MOOD = {
 
 def load_lyrics(csv_path: str) -> list[dict]:
     """Carrega letras do CSV e retorna lista de dicts."""
+    if not Path(csv_path).exists():
+        raise FileNotFoundError(f"Arquivo de letras nao encontrado: {csv_path}")
     lyrics = []
     with open(csv_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
