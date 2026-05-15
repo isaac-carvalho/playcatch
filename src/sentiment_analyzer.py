@@ -98,25 +98,26 @@ def main():
     csv_path = base_dir / "data" / "lyrics.csv"
     output_path = base_dir / "data" / "lyrics_sentiment.json"
 
-    print("=" * 60)
-    print("PLAYCATCH — Analise de Sentimentos das Letras")
-    print("=" * 60)
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    log.info("=" * 60)
+    log.info("PLAYCATCH — Analise de Sentimentos das Letras")
+    log.info("=" * 60)
 
     lyrics = load_lyrics(str(csv_path))
-    print(f"\n{len(lyrics)} letras carregadas.\n")
+    log.info("%d letras carregadas.", len(lyrics))
 
     results = analyze_sentiments(lyrics)
 
     save_results(results, str(output_path))
 
-    # Resumo
-    print("\n" + "=" * 60)
-    print("RESUMO")
-    print("=" * 60)
     from collections import Counter
+    log.info("=" * 60)
+    log.info("RESUMO")
+    log.info("=" * 60)
     mood_counts = Counter(r["sentimento"] for r in results)
     for mood, count in mood_counts.most_common():
-        print(f"  {mood:15s}: {count} musicas")
+        log.info("  %-15s: %d musicas", mood, count)
 
 
 if __name__ == "__main__":

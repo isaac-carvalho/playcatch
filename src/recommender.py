@@ -8,8 +8,11 @@ ajustar recomendacoes ao longo do tempo.
 """
 
 import json
+import logging
 import random
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 
 # Sentimentos presentes na base (gerados pelo sentiment_analyzer)
@@ -116,45 +119,44 @@ def main():
     base_dir = Path(__file__).resolve().parent.parent
     data_path = base_dir / "data" / "lyrics_sentiment.json"
 
-    print("=" * 60)
-    print("PLAYCATCH — Recomendador de Musicas")
-    print("=" * 60)
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    log.info("=" * 60)
+    log.info("PLAYCATCH — Recomendador de Musicas")
+    log.info("=" * 60)
 
     rec = MusicRecommender(str(data_path))
     moods = rec.get_available_moods()
-    print(f"\nHumores disponiveis: {', '.join(moods)}")
+    log.info("Humores disponiveis: %s", ", ".join(moods))
 
-    # Teste: recomendacoes para cada humor
     for mood in moods:
         recs = rec.recommend(mood, n=3)
-        print(f"\n{'='*40}")
-        print(f"Recomendacoes para humor: {mood.upper()}")
-        print(f"{'='*40}")
+        log.info("=" * 40)
+        log.info("Recomendacoes para humor: %s", mood.upper())
+        log.info("=" * 40)
         for i, r in enumerate(recs, 1):
-            print(f"  {i}. {r['titulo']} — {r['artista']} (score: {r['score']})")
+            log.info("  %d. %s — %s (score: %s)", i, r["titulo"], r["artista"], r["score"])
 
-    # Teste: feedback
-    print(f"\n{'='*40}")
-    print("TESTE DE FEEDBACK")
-    print(f"{'='*40}")
+    log.info("=" * 40)
+    log.info("TESTE DE FEEDBACK")
+    log.info("=" * 40)
     if recs:
         song = recs[0]
         rec.register_feedback(song["titulo"], song["artista"], "like")
         rec.register_feedback(song["titulo"], song["artista"], "like")
-        print(f"  2 likes registrados para: {song['titulo']}")
+        log.info("  2 likes registrados para: %s", song["titulo"])
         new_recs = rec.recommend(mood, n=3)
-        print(f"  Reordenacao apos feedback:")
+        log.info("  Reordenacao apos feedback:")
         for i, r in enumerate(new_recs, 1):
-            print(f"    {i}. {r['titulo']} — {r['artista']}")
+            log.info("    %d. %s — %s", i, r["titulo"], r["artista"])
 
-    # Teste: sinonimos
-    print(f"\n{'='*40}")
-    print("TESTE DE SINONIMOS")
-    print(f"{'='*40}")
+    log.info("=" * 40)
+    log.info("TESTE DE SINONIMOS")
+    log.info("=" * 40)
     for sin in ["alegre", "chateado", "animado", "calmo"]:
         norm = rec.normalize_sentiment(sin)
         count = len(rec.recommend(sin, n=99))
-        print(f"  '{sin}' -> '{norm}' ({count} musicas)")
+        log.info("  '%s' -> '%s' (%d musicas)", sin, norm, count)
 
 
 if __name__ == "__main__":
